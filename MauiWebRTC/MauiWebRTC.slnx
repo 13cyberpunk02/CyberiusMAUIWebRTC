@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="MauiWebRtc.Server/MauiWebRtc.Server.csproj" />
+  <Project Path="MauiWebRtc/MauiWebRtc.csproj" />
+</Solution>
