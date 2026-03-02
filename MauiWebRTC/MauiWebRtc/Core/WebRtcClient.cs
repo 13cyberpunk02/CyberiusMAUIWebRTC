@@ -263,11 +263,18 @@ public sealed class WebRtcClient : IWebRtcClient
         // SDPWellKnownMediaFormatsEnum не содержит видео форматов,
         // видео создаётся через VideoFormat напрямую
         var videoTrack = new MediaStreamTrack(
-            new VideoFormat(VideoCodecsEnum.VP8, 96));
+            new List<VideoFormat>
+            {
+                new (new VideoFormat(VideoCodecsEnum.VP8, 96))
+            });
         pc.addTrack(videoTrack);
-        
+
         // PCMU (G.711) — есть в SDPWellKnownMediaFormatsEnum, payload type 0
-        var audioTrack = new MediaStreamTrack(new AudioFormat(SDPWellKnownMediaFormatsEnum.PCMU));
+        var audioTrack = new MediaStreamTrack(
+            new List<AudioFormat>
+            {
+                new (SDPWellKnownMediaFormatsEnum.PCMU)
+            });
         pc.addTrack(audioTrack);
     }
 

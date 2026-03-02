@@ -9,9 +9,8 @@ namespace MauiWebRtc.Core;
 /// Отвечает ТОЛЬКО за транспорт — пересылку SDP и ICE между пирами.
 /// Логика WebRTC — в WebRtcClient.
 /// </summary>
-public sealed class SignalingService : ISignalingService
+public sealed class SignalingService(ILogger<SignalingService> logger) : ISignalingService
 {
-    private readonly ILogger<SignalingService> _logger;
     private HubConnection? _hub;
 
     // ── ISignalingService: состояние ──────────────────────────────
@@ -26,11 +25,6 @@ public sealed class SignalingService : ISignalingService
     public event Func<string, Task>? OnPeerLeft;
     public event Action<Exception?>? OnDisconnected;
     public event Action? OnReconnected;
-
-    public SignalingService(ILogger<SignalingService> logger)
-    {
-        _logger = logger;
-    }
 
     // ── Подключение ───────────────────────────────────────────────
 
@@ -49,7 +43,7 @@ public sealed class SignalingService : ISignalingService
         SubscribeToLifecycle();
 
         await _hub.StartAsync(ct);
-        _logger.LogInformation("SignalR connected. ConnectionId={Id}", _hub.ConnectionId);
+        logger.LogInformation("SignalR connected. ConnectionId={Id}", _hub.ConnectionId);
     }
 
     public async Task DisconnectAsync()
@@ -93,38 +87,39 @@ public sealed class SignalingService : ISignalingService
 
     private void RegisterHandlers()
     {
+        if(_hub is null) return;
         // Hub вызывает эти методы на клиенте
-        _hub!.On<string, string>("ReceiveOffer", async (callerId, sdp) =>
+        _hub.On<string, string>("ReceiveOffer", async (callerId, sdp) =>
         {
-            _logger.LogDebug("ReceiveOffer from {CallerId}", callerId);
+            logger.LogDebug("ReceiveOffer from {CallerId}", callerId);
             if (OnOfferReceived is not null)
                 await OnOfferReceived(callerId, sdp);
         });
 
         _hub.On<string, string>("ReceiveAnswer", async (callerId, sdp) =>
         {
-            _logger.LogDebug("ReceiveAnswer from {CallerId}", callerId);
+            logger.LogDebug("ReceiveAnswer from {CallerId}", callerId);
             if (OnAnswerReceived is not null)
                 await OnAnswerReceived(callerId, sdp);
         });
 
         _hub.On<string, string, string, int>("ReceiveIceCandidate", async (callerId, candidate, sdpMid, sdpMLineIndex) =>
         {
-            _logger.LogDebug("ReceiveIceCandidate from {CallerId}", callerId);
+            logger.LogDebug("ReceiveIceCandidate from {CallerId}", callerId);
             if (OnIceCandidateReceived is not null)
                 await OnIceCandidateReceived(callerId, candidate, sdpMid, sdpMLineIndex);
         });
 
         _hub.On<string>("PeerJoined", async (peerId) =>
         {
-            _logger.LogInformation("Peer joined: {PeerId}", peerId);
+            logger.LogInformation("Peer joined: {PeerId}", peerId);
             if (OnPeerJoined is not null)
                 await OnPeerJoined(peerId);
         });
 
         _hub.On<string>("PeerLeft", async (peerId) =>
         {
-            _logger.LogInformation("Peer left: {PeerId}", peerId);
+            logger.LogInformation("Peer left: {PeerId}", peerId);
             if (OnPeerLeft is not null)
                 await OnPeerLeft(peerId);
         });
@@ -134,14 +129,14 @@ public sealed class SignalingService : ISignalingService
     {
         _hub!.Closed += ex =>
         {
-            _logger.LogWarning(ex, "SignalR disconnected");
+            logger.LogWarning(ex, "SignalR disconnected");
             OnDisconnected?.Invoke(ex);
             return Task.CompletedTask;
         };
 
         _hub.Reconnected += _ =>
         {
-            _logger.LogInformation("SignalR reconnected. New ConnectionId={Id}", _hub.ConnectionId);
+            logger.LogInformation("SignalR reconnected. New ConnectionId={Id}", _hub.ConnectionId);
             OnReconnected?.Invoke();
             return Task.CompletedTask;
         };
@@ -151,13 +146,13 @@ public sealed class SignalingService : ISignalingService
 
     private sealed class RetryPolicy : IRetryPolicy
     {
-        private static readonly TimeSpan[] _delays =
+        private static readonly TimeSpan[] Delays =
             [TimeSpan.Zero, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5),
              TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30)];
 
         public TimeSpan? NextRetryDelay(RetryContext ctx) =>
-            ctx.PreviousRetryCount < _delays.Length
-                ? _delays[ctx.PreviousRetryCount]
+            ctx.PreviousRetryCount < Delays.Length
+                ? Delays[ctx.PreviousRetryCount]
                 : TimeSpan.FromSeconds(30);
     }
 }

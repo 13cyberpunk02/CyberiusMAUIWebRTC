@@ -1,5 +1,6 @@
 ﻿namespace MauiWebRtc.Core.Interfaces;
 
+
 /// <summary>
 /// Отвечает за обмен SDP и ICE кандидатами через SignalR.
 /// Не знает ничего про WebRTC — только транспорт сигналов.

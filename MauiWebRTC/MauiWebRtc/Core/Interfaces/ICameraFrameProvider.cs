@@ -20,3 +20,4 @@ public interface ICameraFrameProvider : IAsyncDisposable
     /// </summary>
     event Action<RawVideoFrame>? OnFrameAvailable;
 }
+

@@ -1,5 +1,7 @@
-﻿using MauiWebRtc.Core;
+﻿using MauiWebRtc.Controls;
+using MauiWebRtc.Core;
 using MauiWebRtc.Core.Interfaces;
+using MauiWebRtc.Handlers;
 
 namespace MauiWebRtc;
 
@@ -21,17 +23,17 @@ public static class MauiWebRtcExtensions
 
         // Платформенный провайдер камеры — каждая платформа компилирует свою реализацию
 #if ANDROID
-     //   builder.Services.AddSingleton<ICameraFrameProvider, Camera2FrameProvider>();
+        builder.Services.AddSingleton<ICameraFrameProvider, Camera2FrameProvider>();
 #elif IOS
-       // builder.Services.AddSingleton<ICameraFrameProvider, AVFoundationFrameProvider>();
+        builder.Services.AddSingleton<ICameraFrameProvider, AvFoundationFrameProvider>();
 #elif WINDOWS
-        //builder.Services.AddSingleton<ICameraFrameProvider, MediaCaptureFrameProvider>();
+        builder.Services.AddSingleton<ICameraFrameProvider, MediaCaptureFrameProvider>();
 #endif
 
         builder.ConfigureMauiHandlers(handlers =>
         {
-            // handlers.AddHandler<CameraPreviewView, CameraPreviewHandler>();
-            // handlers.AddHandler<RemoteVideoView, RemoteVideoHandler>();
+             handlers.AddHandler<CameraPreviewView, CameraPreviewHandler>();
+             handlers.AddHandler<RemoteVideoView, RemoteVideoHandler>();
         });
 
         return builder;
